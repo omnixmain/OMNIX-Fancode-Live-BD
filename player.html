@@ -135,9 +135,13 @@
             const source = decodeURIComponent(streamUrl);
             const poster = img && img !== 'undefined' ? decodeURIComponent(img) : '';
 
-            // JWPlayer Setup (Replicated from Reference)
+            // User's Proxy URL (from their secondary site)
+            // This is required to bypass CORS/Geo-restrictions on FanCode streams
+            const proxyUrl = "https://allinonereborn.xyz/fcww/live222.php?url=" + encodeURIComponent(source);
+
+            // JWPlayer Setup
             jwplayer("player").setup({
-                file: source,
+                file: proxyUrl, // Play via Proxy
                 image: poster,
                 autostart: true,
                 mute: false,
