@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,37 +8,69 @@
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
+    <!-- Background Animation Container -->
+    <div id="background-animation"></div>
 
     <header class="app-header">
-        <div class="logo-container">
-            <h1>OMNIX <span class="gold-text">LIVE</span></h1>
+        <div class="header-top">
+            <div class="logo-container">
+                <i class="fa-solid fa-play-circle" style="color:var(--gold-primary); font-size: 1.5rem;"></i>
+                <h1 class="app-logo">OMNIX <span>LIVE</span></h1>
+            </div>
+            <div class="search-bar">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search matches...">
+            </div>
         </div>
-        <div class="search-bar">
-            <i class="fa-solid fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Search matches...">
-        </div>
-    </header>
 
-    <nav class="category-nav">
-        <button class="cat-btn active" data-category="all">All</button>
-        <!-- Categories will be injected here dynamically -->
-    </nav>
+        <nav class="category-nav">
+            <button class="cat-btn active" data-category="all">All</button>
+            <!-- Categories will be injected here dynamically -->
+        </nav>
+    </header>
 
     <main class="content-area">
         <div id="loading" class="loading-spinner">
             <div class="spinner"></div>
             <p>Loading Data...</p>
         </div>
-        
+
         <div id="matches-grid" class="matches-grid">
             <!-- Matches will be injected here -->
         </div>
     </main>
+
+    <!-- Stream Selection Modal -->
+    <div id="streamModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="modal-title">Select Stream Quality</h2>
+            <p class="modal-match-name" id="modalMatchName">Match Name</p>
+
+            <div class="stream-options">
+                <button id="btnAdFree" class="stream-btn ad-free">
+                    <i class="fa-solid fa-crown"></i>
+                    <div>
+                        <span>Ad-Free Stream</span>
+                        <small>Premium Experience</small>
+                    </div>
+                </button>
+
+                <button id="btnAds" class="stream-btn with-ads">
+                    <i class="fa-solid fa-rectangle-ad"></i>
+                    <div>
+                        <span>Standard Stream</span>
+                        <small>Contains Ads</small>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <footer class="app-footer">
         <p>&copy; 2025 OMNIX LIVE. Powered by Fancode-BD Data.</p>
@@ -45,4 +78,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>

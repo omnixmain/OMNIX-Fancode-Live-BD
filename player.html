@@ -4,131 +4,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Watch - OMNIX LIVE</title>
-    <link rel="stylesheet" href="style.css">
+    <title>OMNIX Player</title>
+    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- HLS.js -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <!-- Plyr CSS -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
     <style>
-        body {
-            overflow: hidden;
-            /* Fullscreen feel */
+        :root {
+            --gold-primary: #FFD700;
+            --bg-color: #050505;
+            --plyr-color-main: #FFD700;
+            /* Gold Controls */
+            --plyr-video-control-color: #ffffff;
+            --plyr-menu-background: rgba(20, 20, 20, 0.95);
+            --plyr-menu-color: #ffffff;
         }
 
-        .player-container {
-            width: 100vw;
-            height: 100vh;
-            background: black;
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-color);
+            color: white;
+            font-family: 'Outfit', sans-serif;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
+            min-height: 100vh;
         }
 
-        #video {
+        /* Gold Background Animation (Simplified for Player) */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            max-height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+            background: radial-gradient(circle at center, #1a1a1a, #000);
+        }
+
+        /* Header */
+        .player-header {
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+            backdrop-filter: blur(10px);
+            z-index: 10;
         }
 
         .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 10px 15px;
-            border-radius: 50px;
-            text-decoration: none;
-            z-index: 100;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 5px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            transition: all 0.3s;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
         }
 
         .back-btn:hover {
             background: var(--gold-primary);
             color: black;
+            box-shadow: 0 0 15px var(--gold-primary);
         }
 
-        .video-title-overlay {
+        .match-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gold-primary);
+        }
+
+        /* Video Container */
+        .video-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .video-box {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.15);
+            /* Gold Glow */
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            position: relative;
+        }
+
+        /* Error Message Override */
+        .player-error {
             position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 1.2rem;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 20;
             text-align: center;
-            text-shadow: 0 2px 5px black;
-            z-index: 90;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 5px 15px;
-            border-radius: 4px;
+            display: none;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="player-container">
-        <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back</a>
-        <div class="video-title-overlay" id="videoTitle">Loading...</div>
-        <video id="video" controls autoplay></video>
+    <div class="bg-animation"></div>
+
+    <header class="player-header">
+        <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
+        <div class="match-title" id="playerTitle">Loading Match...</div>
+    </header>
+
+    <div class="video-wrapper">
+        <div class="video-box">
+            <video id="player" controls crossorigin playsinline>
+                <!-- Source will be injected via JS -->
+            </video>
+
+            <div id="errorDisplay" class="player-error">
+                <i class="fa-solid fa-triangle-exclamation"
+                    style="font-size: 3rem; color: #ff3b3b; margin-bottom: 1rem;"></i>
+                <h3 style="color: white; margin-bottom: 0.5rem;">Stream Failed</h3>
+                <p style="color: #aaa; margin-bottom: 1.5rem;">The stream source is currently unavailable.</p>
+                <button onclick="location.reload()"
+                    style="padding: 10px 20px; background: var(--gold-primary); border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Retry</button>
+            </div>
+        </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
     <script>
-        const video = document.getElementById('video');
-        const videoTitle = document.getElementById('videoTitle');
-        const urlParams = new URLSearchParams(window.location.search);
-        const streamUrl = urlParams.get('src');
-        const title = urlParams.get('title');
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const streamUrl = urlParams.get('src');
+            const title = urlParams.get('title');
+            const playerTitle = document.getElementById('playerTitle');
+            const errorDisplay = document.getElementById('errorDisplay');
 
-        if (title) {
-            videoTitle.textContent = title;
-            document.title = "Watching: " + title;
-        }
+            if (title) playerTitle.textContent = decodeURIComponent(title);
 
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(streamUrl);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                video.play();
-            });
+            if (!streamUrl) {
+                alert("No stream URL provided!");
+                return;
+            }
 
-            // Handle Errors
-            hls.on(Hls.Events.ERROR, function (event, data) {
-                if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.log("fatal network error encountered, try to recover");
-                            hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.log("fatal media error encountered, try to recover");
-                            hls.recoverMediaError();
-                            break;
-                        default:
-                            console.log("fatal error, cannot recover");
-                            hls.destroy();
-                            break;
+            const source = decodeURIComponent(streamUrl);
+            const video = document.getElementById('player');
+
+            // Plyr Options
+            const defaultOptions = {
+                controls: [
+                    'play-large', 'restart', 'rewind', 'play', 'fast-forward',
+                    'progress', 'current-time', 'duration', 'mute', 'volume',
+                    'captions', 'settings', 'pip', 'airplay', 'fullscreen'
+                ],
+                settings: ['quality', 'speed', 'loop']
+            };
+
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    debug: false,
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                    backBufferLength: 90
+                });
+
+                hls.loadSource(source);
+                hls.attachMedia(video);
+
+                hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+                    // Initialize Plyr when HLS is ready
+                    const player = new Plyr(video, defaultOptions);
+                    player.play(); // Auto-play
+                });
+
+                // Error Handling
+                hls.on(Hls.Events.ERROR, function (event, data) {
+                    console.error("HLS Error:", data);
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.log('Network error, trying to recover...');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.log('Media error, trying to recover...');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                console.error('Fatal error, cannot recover.');
+                                hls.destroy();
+                                errorDisplay.style.display = 'flex'; // Show custom error UI
+                                break;
+                        }
                     }
-                }
-            });
+                });
 
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = streamUrl;
-            video.addEventListener('loadedmetadata', function () {
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // For Safari
+                video.src = source;
+                const player = new Plyr(video, defaultOptions);
                 video.play();
-            });
-        }
+            } else {
+                alert("Your browser does not support HLS streaming.");
+                errorDisplay.style.display = 'flex';
+            }
+        });
     </script>
 </body>
 
