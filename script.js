@@ -358,7 +358,7 @@ function showStreamOptions(match) {
                 </div>
             `;
 
-            btn.onclick = () => openPlayer(stream.url, match.title);
+            btn.onclick = () => openPlayer(stream.url, match.title, match.image);
             streamOptionsContainer.appendChild(btn);
         });
     }
@@ -374,10 +374,11 @@ streamModal.addEventListener('click', (e) => {
     if (e.target === streamModal) closeModal();
 });
 
-function openPlayer(url, title) {
+function openPlayer(url, title, image) {
     const encodedUrl = encodeURIComponent(url);
     const encodedTitle = encodeURIComponent(title);
-    window.location.href = `player.html?src=${encodedUrl}&title=${encodedTitle}`;
+    const encodedImg = encodeURIComponent(image || '');
+    window.location.href = `player.html?src=${encodedUrl}&title=${encodedTitle}&img=${encodedImg}`;
     setTimeout(closeModal, 500);
 }
 
