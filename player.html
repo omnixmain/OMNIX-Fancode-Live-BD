@@ -4,13 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- SUPER CRITICAL: Hides the referrer so the server thinks it's a direct browser open -->
+    <meta name="referrer" content="no-referrer">
+
     <title>OMNIX Player</title>
+
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- JWPlayer Library (Match Reference Site) -->
+    <!-- JWPlayer Library 8.40.2 (Verified Source) -->
     <script src="https://cdn.jwplayer.com/libraries/IDzF9Zmk.js"></script>
 
     <style>
@@ -135,13 +139,11 @@
             const source = decodeURIComponent(streamUrl);
             const poster = img && img !== 'undefined' ? decodeURIComponent(img) : '';
 
-            // User's Proxy URL (from their secondary site)
-            // This is required to bypass CORS/Geo-restrictions on FanCode streams
-            const proxyUrl = "https://allinonereborn.xyz/fcww/live222.php?url=" + encodeURIComponent(source);
-
             // JWPlayer Setup
+            // NOTE: We rely on the <meta name="referrer" content="no-referrer"> tag
+            // to allow the stream to play as if it were opened directly in a new tab.
             jwplayer("player").setup({
-                file: proxyUrl, // Play via Proxy
+                file: source,
                 image: poster,
                 autostart: true,
                 mute: false,
@@ -149,23 +151,19 @@
                 height: "100%",
                 stretching: "uniform",
                 controls: true,
-                primary: "html5",
-                hlshtml: true, // Force HLS via HTML5
+                primary: "html5", // Force HTML5 first
+                hlshtml: true,    // Force HLS via HTML5
                 type: "hls",
                 skin: {
-                    name: "netflix", // Premium feel
+                    name: "netflix",
                     active: "#FFD700",
                     inactive: "#ffffff",
                     background: "rgba(0,0,0,0.9)"
                 }
             });
 
-            // Error Handling
             jwplayer("player").on('error', function (e) {
                 console.error("JWPlayer Error:", e);
-                // We can't easily overlay Custom HTML inside JWPlayer iframe/container safely without breaking it,
-                // so we fallback to alert or simple retry logic if needed.
-                // But JWPlayer usually handles visual errors well.
             });
         });
     </script>
