@@ -382,34 +382,91 @@ function openPlayer(url, title, image) {
     setTimeout(closeModal, 500);
 }
 
-// Initial Load
+// --- TELEGRAM MODAL & AD REDIRECT LOGIC ---
+
+const AD_URL = 'https://otieu.com/4/10247206';
+const TELEGRAM_URL = 'https://t.me/omnix_Empire';
+
+// Telegram Modal Control
+const telegramModal = document.getElementById('telegramModal');
+const joinTelegramBtn = document.getElementById('joinTelegramBtn');
+
+function showTelegramModal() {
+    telegramModal.classList.add('active');
+}
+
+function closeTelegramModal() {
+    telegramModal.classList.remove('active');
+}
+
+// Initial Load & Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     fetchData();
-    createGoldParticles();
+    // Note: Particles are now handled by particles-init.js
+
+    // Show Telegram Modal on Load
+    showTelegramModal();
 });
 
-// Gold Background Animation
-function createGoldParticles() {
-    const container = document.getElementById('background-animation');
-    const particleCount = 25;
+// Join Button Click: Open Telegram & Close Modal
+joinTelegramBtn.addEventListener('click', () => {
+    closeTelegramModal();
+});
 
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'gold-particle';
 
-        // Random Properties
-        const size = Math.random() * 5 + 2 + 'px'; // 2px to 7px
-        const left = Math.random() * 100 + 'vw';
-        const duration = Math.random() * 15 + 10 + 's'; // 10s to 25s
-        const delay = Math.random() * 5 + 's';
+// 1. FIRST CLICK REDIRECT (Anywhere)
+let firstClickDone = false;
 
-        particle.style.width = size;
-        particle.style.height = size;
-        particle.style.left = left;
-        particle.style.animationDuration = duration;
-        particle.style.animationDelay = delay;
+window.addEventListener('click', (e) => {
+    if (firstClickDone) return; // Only process the very first click
 
-        container.appendChild(particle);
+    // Check if the click is NOT on the join button (to avoid double opening or blocking join)
+    // However, user requirement says "first click anywhere... take to ad". 
+    // If we want to allow them to click Join first, we might strictly wait for the modal to close.
+    // BUT the requirement is "jo users ake aha click kare unko phele ads website par le jao"
+    // "koi bhi kahi bhi pheli bar click kare button nahi hai waha click kare usko is link par le jao"
+
+    // Safety: If they click the JOIN button, let that handle the Telegram open.
+    // If they click anywhere else (like background, or if they close modal somehow), force ad.
+    // Since modal covers everything, they HAVE to click 'Join' or the modal backdrop.
+
+    // Implementation:
+    // If the modal is ACTIVE, we probably shouldn't hijack the 'Join' button to show an ad instead of Telegram,
+    // because then they can't join. 
+    // Let's assume 'First Click' applies to the interaction with the main site OR if they click blindly.
+
+    // REFINED STRATEGY based on request:
+    // "users... click anywhere... take to ad first"
+    // "Telegram joining popup... button rakho jab tak join na kare open na ho"
+
+    // So:
+    // 1. User sees blocking modal.
+    // 2. User MUST click 'Join Channel'. 
+    //    - If this click triggers the Ad, they get the Ad tab AND Telegram tab? Or just Ad?
+    //    - If just Ad, they still haven't joined.
+    //    - Better UX: 'Join' opens Telegram. 
+    // 3. User comes back. Now they browse.
+    // 4. NEXT click anywhere triggers the Ad (or maybe the Join click triggered it too).
+
+    // Let's set a flag in sessionStorage to track if they've seen the ad this session?
+    // User says "pheli bar click kare... usko is link par le jao".
+
+    if (!e.target.closest('#joinTelegramBtn')) {
+        // If they click something that is NOT the join button
+        e.preventDefault();
+        e.stopPropagation();
+
+        window.open(AD_URL, '_blank');
+        firstClickDone = true;
+
+        // If it was an interactive element, they might need to click again.
+        // This 'intercept' behavior is typical for these ad scripts.
     }
-}
+}, { capture: true }); // Capture phase to catch it before other element handlers
+
+
+// 2. 15-MINUTE RECURRING AD
+setInterval(() => {
+    window.open(AD_URL, '_blank');
+}, 15 * 60 * 1000); // 15 minutes * 60 seconds * 1000 ms
 
