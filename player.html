@@ -100,6 +100,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
 
         #player {
@@ -120,29 +121,78 @@
 
     <div class="video-wrapper">
         <div id="player"></div>
+        
+        <!-- Error Overlay -->
+        <div id="error-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); color:white; z-index:20; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ff4444; margin-bottom: 20px;"></i>
+            <h2 style="margin: 0 0 10px 0;">Playback Issue</h2>
+            <p id="error-message" style="margin-bottom: 20px; color: #ccc; max-width: 500px;">The video could not be loaded.</p>
+            
+            <div style="display:flex; gap:15px; flex-wrap:wrap; justify-content:center; align-items: center;">
+                <button onclick="retryPlayback()" style="padding: 10px 20px; border:none; background: var(--gold-primary); color:black; font-weight:bold; cursor:pointer; border-radius:4px;">
+                    <i class="fa-solid fa-rotate-right"></i> Retry
+                </button>
+                <button onclick="switchToIframe()" style="padding: 10px 20px; border:1px solid white; background: transparent; color:white; cursor:pointer; border-radius:4px;">
+                    <i class="fa-solid fa-globe"></i> Switch to Iframe Mode
+                </button>
+                 <a id="direct-link-btn" href="#" target="_blank" style="padding: 10px 20px; border:1px solid #444; background: #222; color:#fff; cursor:pointer; border-radius:4px; text-decoration:none; font-size: 0.9rem;">
+                    <i class="fa-solid fa-external-link-alt"></i> Open Directly
+                </a>
+            </div>
+            <p style="margin-top:20px; font-size:0.8rem; color:#666;">
+                Tip: "Iframe Mode" loads the URL as a webpage instead of a video file.<br>
+                Use "Open Directly" if the stream is blocked by browser security (e.g. HTTP vs HTTPS).
+            </p>
+        </div>
     </div>
 
     <script>
+        // Global var to store current setup
+        let currentUrl = '';
+        let currentTitle = '';
+        let playerInstance = null;
+
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const streamUrl = urlParams.get('src');
             const title = urlParams.get('title');
             const img = urlParams.get('img');
 
-            if (title) document.getElementById('playerTitle').textContent = decodeURIComponent(title);
+            if (title) {
+                currentTitle = decodeURIComponent(title);
+                document.getElementById('playerTitle').textContent = currentTitle;
+            }
 
             if (!streamUrl) {
-                alert("No stream URL!");
+                showError("No stream URL provided.");
                 return;
             }
 
-            const source = decodeURIComponent(streamUrl);
+            currentUrl = decodeURIComponent(streamUrl);
             const poster = img && img !== 'undefined' ? decodeURIComponent(img) : '';
 
-            // JWPlayer Setup
-            // NOTE: We rely on the <meta name="referrer" content="no-referrer"> tag
-            // to allow the stream to play as if it were opened directly in a new tab.
-            jwplayer("player").setup({
+            // Update Direct Link Button
+            document.getElementById('direct-link-btn').href = currentUrl;
+
+            // Check for Mixed Content (HTTP on HTTPS)
+            if (window.location.protocol === 'https:' && currentUrl.startsWith('http:')) {
+                console.warn("Mixed Content Warning: Trying to play HTTP stream on HTTPS.");
+                // We show a toast or just log it. The error handler will likely catch it.
+            }
+
+            initJwPlayer(currentUrl, poster);
+        });
+
+        function initJwPlayer(source, poster) {
+            // Attempt to auto-detect type. 
+            // Only force type if we are 100% sure, otherwise let JWPlayer guess.
+            
+            let typeConfig = {};
+            if (source.includes('.m3u8')) typeConfig = { type: 'hls' };
+            else if (source.includes('.mp4')) typeConfig = { type: 'mp4' };
+            // For other extensions or no extension, leave undefined to allow auto-detection
+            
+            playerInstance = jwplayer("player").setup({
                 file: source,
                 image: poster,
                 autostart: true,
@@ -151,9 +201,11 @@
                 height: "100%",
                 stretching: "uniform",
                 controls: true,
-                primary: "html5", // Force HTML5 first
-                hlshtml: true,    // Force HLS via HTML5
-                type: "hls",
+                primary: "html5",
+                hlshtml: true,
+                // Merging type config if detected
+                ...typeConfig,
+                
                 skin: {
                     name: "netflix",
                     active: "#FFD700",
@@ -162,10 +214,64 @@
                 }
             });
 
-            jwplayer("player").on('error', function (e) {
+            playerInstance.on('error', function (e) {
                 console.error("JWPlayer Error:", e);
+                // Translate common errors
+                let msg = "Error loading media.";
+                if (e.message && e.message.includes("232012")) {
+                    msg = "Network or Format Error. The URL might be blocked (Mixed Content) or it's a webpage not a video.";
+                } else if (e.message) {
+                    msg = e.message;
+                }
+                showError(msg);
             });
-        });
+
+            playerInstance.on('setupError', function (e) {
+                console.error("JWPlayer Setup Error:", e);
+                showError("Setup Error: " + e.message);
+            });
+        }
+
+        function showError(msg) {
+            document.getElementById('error-overlay').style.display = 'flex';
+            document.getElementById('error-message').innerText = msg;
+        }
+
+        function retryPlayback() {
+             document.getElementById('error-overlay').style.display = 'none';
+             if(playerInstance) {
+                 playerInstance.load({ file: currentUrl });
+                 playerInstance.play();
+             } else {
+                 location.reload();
+             }
+        }
+
+        function switchToIframe() {
+            // Destroy player and replace with Iframe
+            if (playerInstance) {
+                try { playerInstance.remove(); } catch(e){}
+            }
+            
+            const wrapper = document.querySelector('.video-wrapper');
+            
+            // Re-render wrapper content
+            wrapper.innerHTML = `
+                <iframe src="${currentUrl}" 
+                        style="width:100%; height:100%; border:none; background: #000;" 
+                        allowfullscreen 
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                        sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation">
+                </iframe>
+                <div style="position:absolute; top: -40px; right: 20px; z-index:50;">
+                    <button onclick="location.reload()" style="background:#333; color:white; border:none; padding:5px 10px; cursor:pointer;">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset Player
+                    </button>
+                </div>
+            `;
+            
+            // Hide error overlay logic is implicit as wrapper is wiped
+        }
     </script>
 </body>
 
