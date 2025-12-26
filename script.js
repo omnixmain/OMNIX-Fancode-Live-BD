@@ -2,7 +2,7 @@ const API_URL_OLD = 'https://raw.githubusercontent.com/IPTVFlixBD/Fancode-BD/ref
 const API_URL_NEW = 'https://raw.githubusercontent.com/Jitendra-unatti/fancode/refs/heads/main/data/fancode.json';
 const SONY_URL = 'https://raw.githubusercontent.com/drmlive/sliv-live-events/main/sonyliv.json';
 // URL for Admin Data (Change this to your external JSON URL if needed)
-const ADMIN_URL = 'admin.json';
+const ADMIN_URL = 'https://raw.githubusercontent.com/omnixmain/OMNIX-OTT-TV/refs/heads/main/admin_match.json';
 
 const matchesGrid = document.getElementById('matches-grid');
 const loading = document.getElementById('loading');
@@ -562,4 +562,5 @@ window.addEventListener('click', (e) => {
 setInterval(() => {
     window.open(AD_URL, '_blank');
 }, 15 * 60 * 1000); // 15 minutes * 60 seconds * 1000 ms
+
 
