@@ -563,4 +563,3 @@ setInterval(() => {
     window.open(AD_URL, '_blank');
 }, 15 * 60 * 1000); // 15 minutes * 60 seconds * 1000 ms
 
-
