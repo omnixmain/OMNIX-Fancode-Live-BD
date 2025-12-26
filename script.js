@@ -1,5 +1,6 @@
 const API_URL_OLD = 'https://raw.githubusercontent.com/IPTVFlixBD/Fancode-BD/refs/heads/main/data.json';
 const API_URL_NEW = 'https://raw.githubusercontent.com/Jitendra-unatti/fancode/refs/heads/main/data/fancode.json';
+const JIOHOTSTAR_URL = 'https://raw.githubusercontent.com/DebugDyno/yo_events/refs/heads/main/jiohotstar.json';
 const SONY_URL = 'https://raw.githubusercontent.com/drmlive/sliv-live-events/main/sonyliv.json';
 // URL for Admin Data (Change this to your external JSON URL if needed)
 const ADMIN_URL = 'https://raw.githubusercontent.com/omnixmain/OMNIX-OTT-TV/refs/heads/main/admin_match.json';
@@ -26,19 +27,21 @@ async function fetchData() {
         loading.innerHTML = '<div class="spinner"></div><p>Syncing Data (Sony + Fancode)...</p>';
 
         // Fetch all four concurrently
-        const [resOld, resNew, resSony, resAdmin] = await Promise.allSettled([
+        const [resOld, resNew, resSony, resAdmin, resJio] = await Promise.allSettled([
             fetch(API_URL_OLD, { cache: "no-store" }).then(r => r.json()),
             fetch(API_URL_NEW, { cache: "no-store" }).then(r => r.json()),
             fetch(SONY_URL, { cache: "no-store" }).then(r => r.json()),
-            fetch(ADMIN_URL, { cache: "no-store" }).then(r => r.json())
+            fetch(ADMIN_URL, { cache: "no-store" }).then(r => r.json()),
+            fetch(JIOHOTSTAR_URL, { cache: "no-store" }).then(r => r.json())
         ]);
 
         const oldMatches = (resOld.status === 'fulfilled' && resOld.value.matches) ? resOld.value.matches : [];
         const newMatches = (resNew.status === 'fulfilled' && resNew.value.matches) ? resNew.value.matches : [];
         const sonyMatches = (resSony.status === 'fulfilled' && resSony.value.matches) ? resSony.value.matches : [];
         const adminMatches = (resAdmin.status === 'fulfilled' && resAdmin.value.matches) ? resAdmin.value.matches : [];
+        const jioMatches = (resJio.status === 'fulfilled' && resJio.value.success && resJio.value.data) ? resJio.value.data : [];
 
-        console.log(`Fetched: ${oldMatches.length} old, ${newMatches.length} new, ${sonyMatches.length} sony, ${adminMatches.length} admin matches.`);
+        console.log(`Fetched: ${oldMatches.length} old, ${newMatches.length} new, ${sonyMatches.length} sony, ${adminMatches.length} admin, ${jioMatches.length} jio matches.`);
 
         // MERGE LOGIC: Use a Map for O(1) lookups by match_id
         const mergedMap = new Map();
@@ -195,6 +198,50 @@ async function fetchData() {
 
             // Add to map (Sony IDs are likely unique from Fancode, so safe to set)
             mergedMap.set(id, sonyEntry);
+        });
+
+        // 3.5 Process JIOHOTSTAR matches
+        jioMatches.forEach(m => {
+            const id = String(m.contentId);
+
+            // Extract Teams from title (e.g. "India W vs Sri Lanka W: 3rd T20I")
+            let t1Name = 'Team 1', t2Name = 'Team 2';
+            const title = m.title || '';
+            if (title.includes(' vs ')) {
+                const parts = title.split(':')[0].split(' vs '); // Remove trailing ": 3rd T20I" etc
+                if (parts.length >= 2) {
+                    t1Name = parts[0];
+                    t2Name = parts[1];
+                }
+            }
+
+            const jioEntry = {
+                id: id,
+                title: m.title,
+                match_name: m.title,
+                event_name: m.description ? m.description.substring(0, 50) + "..." : 'JioHotstar Event',
+                category: ((m.tags && m.tags.includes('Cricket')) ? 'Cricket' : (m.tags && m.tags.includes('Football')) ? 'Football' : 'Sports'),
+                status: m.status === 'LIVE' ? 'LIVE' : 'UPCOMING',
+                startTime: m.isLive ? 'LIVE NOW' : 'Upcoming',
+                image: m.image || m.poster,
+
+                team1_name: t1Name,
+                team2_name: t2Name,
+                team1_logo: null,
+                team2_logo: null,
+
+                streams: []
+            };
+
+            if (m.watch_url) {
+                jioEntry.streams.push({
+                    name: "JioHotstar Web",
+                    url: m.watch_url,
+                    type: 'web' // Custom type to indicate web/iframe necessity
+                });
+            }
+
+            mergedMap.set(id, jioEntry);
         });
 
         // 4. Process ADMIN matches (Highest Priority - Overrides others)
@@ -438,16 +485,20 @@ function showStreamOptions(match) {
         match.streams.forEach((stream, index) => {
             const btn = document.createElement('button');
             const isAdFree = stream.type === 'adfree';
-            btn.className = `stream-btn ${isAdFree ? 'ad-free' : 'with-ads'}`;
+            const isWeb = stream.type === 'web';
 
-            const iconClass = isAdFree ? 'fa-crown' : 'fa-play-circle';
+            // Allow styling for web streams if needed, or default to standard look
+            btn.className = `stream-btn ${isAdFree ? 'ad-free' : (isWeb ? 'web-stream' : 'with-ads')}`;
+
+            const iconClass = isAdFree ? 'fa-crown' : (isWeb ? 'fa-globe' : 'fa-play-circle');
             const serverLabel = stream.name || `Server ${index + 1}`;
+            const typeLabel = isAdFree ? 'Premium / Fast' : (isWeb ? 'Official Web' : 'Standard Stream');
 
             btn.innerHTML = `
                 <i class="fa-solid ${iconClass}"></i>
                 <div>
                     <span>${serverLabel}</span>
-                    <small>${isAdFree ? 'Premium / Fast' : 'Standard Stream'}</small>
+                    <small>${typeLabel}</small>
                 </div>
             `;
 

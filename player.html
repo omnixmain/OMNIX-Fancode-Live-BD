@@ -121,21 +121,27 @@
 
     <div class="video-wrapper">
         <div id="player"></div>
-        
+
         <!-- Error Overlay -->
-        <div id="error-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); color:white; z-index:20; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px;">
-            <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ff4444; margin-bottom: 20px;"></i>
+        <div id="error-overlay"
+            style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); color:white; z-index:20; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px;">
+            <i class="fa-solid fa-triangle-exclamation"
+                style="font-size: 3rem; color: #ff4444; margin-bottom: 20px;"></i>
             <h2 style="margin: 0 0 10px 0;">Playback Issue</h2>
-            <p id="error-message" style="margin-bottom: 20px; color: #ccc; max-width: 500px;">The video could not be loaded.</p>
-            
+            <p id="error-message" style="margin-bottom: 20px; color: #ccc; max-width: 500px;">The video could not be
+                loaded.</p>
+
             <div style="display:flex; gap:15px; flex-wrap:wrap; justify-content:center; align-items: center;">
-                <button onclick="retryPlayback()" style="padding: 10px 20px; border:none; background: var(--gold-primary); color:black; font-weight:bold; cursor:pointer; border-radius:4px;">
+                <button onclick="retryPlayback()"
+                    style="padding: 10px 20px; border:none; background: var(--gold-primary); color:black; font-weight:bold; cursor:pointer; border-radius:4px;">
                     <i class="fa-solid fa-rotate-right"></i> Retry
                 </button>
-                <button onclick="switchToIframe()" style="padding: 10px 20px; border:1px solid white; background: transparent; color:white; cursor:pointer; border-radius:4px;">
+                <button onclick="switchToIframe()"
+                    style="padding: 10px 20px; border:1px solid white; background: transparent; color:white; cursor:pointer; border-radius:4px;">
                     <i class="fa-solid fa-globe"></i> Switch to Iframe Mode
                 </button>
-                 <a id="direct-link-btn" href="#" target="_blank" style="padding: 10px 20px; border:1px solid #444; background: #222; color:#fff; cursor:pointer; border-radius:4px; text-decoration:none; font-size: 0.9rem;">
+                <a id="direct-link-btn" href="#" target="_blank"
+                    style="padding: 10px 20px; border:1px solid #444; background: #222; color:#fff; cursor:pointer; border-radius:4px; text-decoration:none; font-size: 0.9rem;">
                     <i class="fa-solid fa-external-link-alt"></i> Open Directly
                 </a>
             </div>
@@ -177,7 +183,13 @@
             // Check for Mixed Content (HTTP on HTTPS)
             if (window.location.protocol === 'https:' && currentUrl.startsWith('http:')) {
                 console.warn("Mixed Content Warning: Trying to play HTTP stream on HTTPS.");
-                // We show a toast or just log it. The error handler will likely catch it.
+            }
+
+            // AUTO-DETECT HOTSTAR / WEB URLS
+            if (currentUrl.includes('hotstar.com') || currentUrl.includes('jiohotstar') || currentUrl.includes('jiocinema')) {
+                console.log("Web URL detected, switching to Iframe mode automatically.");
+                switchToIframe();
+                return;
             }
 
             initJwPlayer(currentUrl, poster);
@@ -186,12 +198,12 @@
         function initJwPlayer(source, poster) {
             // Attempt to auto-detect type. 
             // Only force type if we are 100% sure, otherwise let JWPlayer guess.
-            
+
             let typeConfig = {};
             if (source.includes('.m3u8')) typeConfig = { type: 'hls' };
             else if (source.includes('.mp4')) typeConfig = { type: 'mp4' };
             // For other extensions or no extension, leave undefined to allow auto-detection
-            
+
             playerInstance = jwplayer("player").setup({
                 file: source,
                 image: poster,
@@ -205,7 +217,7 @@
                 hlshtml: true,
                 // Merging type config if detected
                 ...typeConfig,
-                
+
                 skin: {
                     name: "netflix",
                     active: "#FFD700",
@@ -238,23 +250,23 @@
         }
 
         function retryPlayback() {
-             document.getElementById('error-overlay').style.display = 'none';
-             if(playerInstance) {
-                 playerInstance.load({ file: currentUrl });
-                 playerInstance.play();
-             } else {
-                 location.reload();
-             }
+            document.getElementById('error-overlay').style.display = 'none';
+            if (playerInstance) {
+                playerInstance.load({ file: currentUrl });
+                playerInstance.play();
+            } else {
+                location.reload();
+            }
         }
 
         function switchToIframe() {
             // Destroy player and replace with Iframe
             if (playerInstance) {
-                try { playerInstance.remove(); } catch(e){}
+                try { playerInstance.remove(); } catch (e) { }
             }
-            
+
             const wrapper = document.querySelector('.video-wrapper');
-            
+
             // Re-render wrapper content
             wrapper.innerHTML = `
                 <iframe src="${currentUrl}" 
@@ -263,13 +275,16 @@
                         allow="autoplay; encrypted-media; picture-in-picture"
                         sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation">
                 </iframe>
-                <div style="position:absolute; top: -40px; right: 20px; z-index:50;">
-                    <button onclick="location.reload()" style="background:#333; color:white; border:none; padding:5px 10px; cursor:pointer;">
-                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset Player
+                <div style="position:absolute; bottom: 20px; right: 20px; z-index:50; display:flex; gap:10px;">
+                    <a href="${currentUrl}" target="_blank" style="background:var(--gold-primary); color:black; border:none; padding:8px 15px; cursor:pointer; text-decoration:none; font-weight:bold; border-radius:4px; font-size: 0.9rem;">
+                        <i class="fa-solid fa-external-link-alt"></i> Open Externally
+                    </a>
+                    <button onclick="location.reload()" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); color:white; border:1px solid rgba(255,255,255,0.3); padding:8px 15px; cursor:pointer; border-radius:4px; font-size: 0.9rem;">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset
                     </button>
                 </div>
             `;
-            
+
             // Hide error overlay logic is implicit as wrapper is wiped
         }
     </script>
